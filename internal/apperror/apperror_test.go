@@ -43,3 +43,22 @@ func TestError_ErrorMessageWithCause(t *testing.T) {
 		t.Fatalf("Error() = %q, want %q", got, want)
 	}
 }
+
+func TestKindString(t *testing.T) {
+	cases := []struct {
+		k    Kind
+		want string
+	}{
+		{NotFound, "not found"},
+		{Conflict, "conflict"},
+		{BadRequest, "bad request"},
+		{Internal, "internal"},
+		{Kind(0), "unknown"},
+		{Kind(99), "unknown"},
+	}
+	for _, c := range cases {
+		if got := c.k.String(); got != c.want {
+			t.Errorf("Kind(%d).String() = %q, want %q", c.k, got, c.want)
+		}
+	}
+}

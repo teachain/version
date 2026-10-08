@@ -1,72 +1,57 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	DBDSN           string
-	GitHubToken     string
-	HTTPPort        int
-	PollInterval    time.Duration
-	PollConcurrency int
-	LogLevel        string
+	DBDSN           string        `yaml:"db_dsn"`
+	GitHubToken     string        `yaml:"github_token"`
+	HTTPPort        int           `yaml:"http_port"`
+	PollInterval    time.Duration `yaml:"poll_interval"`
+	PollConcurrency int           `yaml:"poll_concurrency"`
+	LogLevel        string        `yaml:"log_level"`
 }
 
-func Load() (*Config, error) {
-	dsn := os.Getenv("DB_DSN")
-	if dsn == "" {
-		return nil, fmt.Errorf("DB_DSN is required")
-	}
-	port, err := atoiOr("HTTP_PORT", 8080)
+func Load(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("config file not found: %s", path)
+		}
+		return nil, fmt.Errorf("read config: %w", err)
 	}
-	dur, err := durationOr("POLL_INTERVAL", 10*time.Minute)
-	if err != nil {
-		return nil, err
+
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("parse config %s: %w", path, err)
 	}
-	conc, err := atoiOr("POLL_CONCURRENCY", 10)
-	if err != nil {
-		return nil, err
+
+	applyDefaults(&cfg)
+
+	if cfg.DBDSN == "" {
+		return nil, fmt.Errorf("db_dsn is required")
 	}
-	lvl := os.Getenv("LOG_LEVEL")
-	if lvl == "" {
-		lvl = "info"
-	}
-	return &Config{
-		DBDSN:           dsn,
-		GitHubToken:     os.Getenv("GITHUB_TOKEN"),
-		HTTPPort:        port,
-		PollInterval:    dur,
-		PollConcurrency: conc,
-		LogLevel:        lvl,
-	}, nil
+
+	return &cfg, nil
 }
 
-func atoiOr(key string, def int) (int, error) {
-	v := os.Getenv(key)
-	if v == "" {
-		return def, nil
+func applyDefaults(cfg *Config) {
+	if cfg.HTTPPort == 0 {
+		cfg.HTTPPort = 8080
 	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("%s invalid: %w", key, err)
+	if cfg.PollInterval == 0 {
+		cfg.PollInterval = 10 * time.Minute
 	}
-	return n, nil
-}
-
-func durationOr(key string, def time.Duration) (time.Duration, error) {
-	v := os.Getenv(key)
-	if v == "" {
-		return def, nil
+	if cfg.PollConcurrency == 0 {
+		cfg.PollConcurrency = 10
 	}
-	d, err := time.ParseDuration(v)
-	if err != nil {
-		return 0, fmt.Errorf("%s invalid: %w", key, err)
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
 	}
-	return d, nil
 }

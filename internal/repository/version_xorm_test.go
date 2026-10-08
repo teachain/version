@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -42,5 +43,20 @@ func TestVersionRepo_CRUD(t *testing.T) {
 	tags, err := verRepo.ListTagNamesByApp(ctx, app.ID)
 	if err != nil || len(tags) != 2 {
 		t.Fatalf("tags: %v %v", err, tags)
+	}
+}
+
+func TestVersionRepo_Get_NotFound(t *testing.T) {
+	eng, cleanup := setupEngine(t)
+	defer cleanup()
+	verRepo := NewVersionXormRepository(eng)
+	ctx := context.Background()
+
+	_, err := verRepo.Get(ctx, 99999)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
 }

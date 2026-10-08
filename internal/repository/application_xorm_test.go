@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -95,5 +96,105 @@ func TestApplicationRepo_CRUD(t *testing.T) {
 
 	if err := repo.Delete(ctx, a.ID); err != nil {
 		t.Fatalf("delete: %v", err)
+	}
+}
+
+func TestApplicationRepo_ListEnabled(t *testing.T) {
+	eng, cleanup := setupEngine(t)
+	defer cleanup()
+	repo := NewApplicationXormRepository(eng)
+	ctx := context.Background()
+
+	enabled := &model.Application{Name: "list-enabled-on", RepoURL: "https://github.com/octocat/Hello-World", Enabled: true}
+	if err := repo.Save(ctx, enabled); err != nil {
+		t.Fatalf("save enabled: %v", err)
+	}
+	disabled := &model.Application{Name: "list-enabled-off", RepoURL: "https://github.com/octocat/Hello-World", Enabled: false}
+	if err := repo.Save(ctx, disabled); err != nil {
+		t.Fatalf("save disabled: %v", err)
+	}
+
+	got, err := repo.ListEnabled(ctx)
+	if err != nil {
+		t.Fatalf("list enabled: %v", err)
+	}
+	var names []string
+	for _, a := range got {
+		names = append(names, a.Name)
+	}
+	hasEnabled, hasDisabled := false, false
+	for _, n := range names {
+		switch n {
+		case "list-enabled-on":
+			hasEnabled = true
+		case "list-enabled-off":
+			hasDisabled = true
+		}
+	}
+	if !hasEnabled {
+		t.Fatalf("expected enabled app in result, got %v", names)
+	}
+	if hasDisabled {
+		t.Fatalf("did not expect disabled app in result, got %v", names)
+	}
+}
+
+func TestApplicationRepo_UpdateLastCheckAt_NotFound(t *testing.T) {
+	eng, cleanup := setupEngine(t)
+	defer cleanup()
+	repo := NewApplicationXormRepository(eng)
+	ctx := context.Background()
+
+	err := repo.UpdateLastCheckAt(ctx, 99999, time.Now())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestApplicationRepo_Delete_NotFound(t *testing.T) {
+	eng, cleanup := setupEngine(t)
+	defer cleanup()
+	repo := NewApplicationXormRepository(eng)
+	ctx := context.Background()
+
+	err := repo.Delete(ctx, 99999)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestApplicationRepo_Get_NotFound(t *testing.T) {
+	eng, cleanup := setupEngine(t)
+	defer cleanup()
+	repo := NewApplicationXormRepository(eng)
+	ctx := context.Background()
+
+	_, err := repo.Get(ctx, 99999)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestApplicationRepo_GetByName_Miss(t *testing.T) {
+	eng, cleanup := setupEngine(t)
+	defer cleanup()
+	repo := NewApplicationXormRepository(eng)
+	ctx := context.Background()
+
+	got, err := repo.GetByName(ctx, "does-not-exist")
+	if err != nil {
+		t.Fatalf("expected nil error for miss, got %v", err)
+	}
+	if got != nil {
+		t.Fatalf("expected nil result for miss, got %+v", got)
 	}
 }

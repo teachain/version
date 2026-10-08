@@ -298,7 +298,7 @@ POLL_CONCURRENCY    10
 LOG_LEVEL           info
 ```
 
-When `GITHUB_TOKEN` is empty, the GitHub client uses unauthenticated requests (rate limit 60/hr); when present, the token is supplied via `oauth2.StaticTokenSource`.
+When `GITHUB_TOKEN` is empty, the GitHub client uses unauthenticated requests (rate limit 60/hr); when present, the token is supplied via go-github's `BasicAuthTransport` with username "x-access-token".
 
 ## 12. Testing Strategy
 
@@ -321,7 +321,6 @@ Coverage targets:
 - `xorm.io/xorm`
 - `github.com/go-sql-driver/mysql` (xorm driver)
 - `github.com/google/go-github/v60` (latest at implementation time)
-- `golang.org/x/oauth2`
 - `go.uber.org/zap` (logging)
 - `github.com/stretchr/testify` (test only)
 - `github.com/testcontainers/testcontainers-go` (test only)

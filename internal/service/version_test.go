@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/teachain/version/internal/apperror"
@@ -9,8 +10,9 @@ import (
 )
 
 type fakeVersionRepo struct {
-	items  map[uint]*model.Version
-	nextID uint
+	items   map[uint]*model.Version
+	nextID  uint
+	listErr error
 }
 
 func newFakeVersionRepo() *fakeVersionRepo {
@@ -30,6 +32,9 @@ func (f *fakeVersionRepo) Get(_ context.Context, id uint) (*model.Version, error
 	return nil, apperror.NotFoundf("version %d", id)
 }
 func (f *fakeVersionRepo) PageByApp(_ context.Context, appID uint, offset, limit int) ([]model.Version, int64, error) {
+	if f.listErr != nil {
+		return nil, 0, f.listErr
+	}
 	var out []model.Version
 	for _, v := range f.items {
 		if v.ApplicationID == appID {
@@ -65,5 +70,25 @@ func TestVersionService_ListByApp_OK(t *testing.T) {
 	items, total, err := NewVersionService(repo).ListByApp(context.Background(), 1, 1, 10)
 	if err != nil || total != 1 || len(items) != 1 {
 		t.Fatalf("err=%v total=%d items=%d", err, total, len(items))
+	}
+}
+
+func TestVersionService_ListByApp_InvalidSize(t *testing.T) {
+	_, _, err := NewVersionService(newFakeVersionRepo()).ListByApp(context.Background(), 1, 1, 0)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if got := err.(*apperror.Error); got.Kind != apperror.BadRequest {
+		t.Fatalf("kind=%v want BadRequest", got.Kind)
+	}
+}
+
+func TestVersionService_ListByApp_RepoError(t *testing.T) {
+	repo := newFakeVersionRepo()
+	dbErr := errors.New("db down")
+	repo.listErr = dbErr
+	_, _, err := NewVersionService(repo).ListByApp(context.Background(), 1, 1, 10)
+	if !errors.Is(err, dbErr) {
+		t.Fatalf("err=%v want %v", err, dbErr)
 	}
 }

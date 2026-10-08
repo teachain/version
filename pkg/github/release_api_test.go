@@ -62,3 +62,55 @@ func TestApiRepo_FetchReleases_InvalidURL(t *testing.T) {
 	}
 	_ = time.Now
 }
+
+func TestNewClient(t *testing.T) {
+	t.Run("empty token returns unauthenticated client", func(t *testing.T) {
+		r := NewClient("")
+		if r == nil {
+			t.Fatal("NewClient(\"\") returned nil")
+		}
+		repo, ok := r.(*apiRepo)
+		if !ok {
+			t.Fatalf("NewClient(\"\") returned %T, want *apiRepo", r)
+		}
+		if repo.client == nil {
+			t.Fatal("apiRepo.client is nil for empty token")
+		}
+	})
+
+	t.Run("non-empty token returns authenticated client", func(t *testing.T) {
+		r := NewClient("ghp_x")
+		if r == nil {
+			t.Fatal("NewClient(\"ghp_x\") returned nil")
+		}
+		repo, ok := r.(*apiRepo)
+		if !ok {
+			t.Fatalf("NewClient(\"ghp_x\") returned %T, want *apiRepo", r)
+		}
+		if repo.client == nil {
+			t.Fatal("apiRepo.client is nil for non-empty token")
+		}
+	})
+}
+
+func TestApiRepo_FetchReleases_HTTPError(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/octocat/Hello-World/releases", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"message":"internal server error"}`, http.StatusInternalServerError)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	client := github.NewClient(nil)
+	baseURL := srv.URL + "/"
+	client.BaseURL, _ = client.BaseURL.Parse(baseURL)
+
+	repo2 := &apiRepo{client: client}
+	_, err := repo2.FetchReleases(context.Background(), "https://github.com/octocat/Hello-World")
+	if err == nil {
+		t.Fatal("expected error from list releases, got nil")
+	}
+	if !strings.Contains(err.Error(), "list releases") {
+		t.Fatalf("expected error wrapping 'list releases', got: %v", err)
+	}
+}

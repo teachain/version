@@ -13,9 +13,8 @@ import (
 )
 
 type stubApps struct {
-	list    []model.Application
-	updates []uint
-	atomic.Uint64
+	list []model.Application
+	updates atomic.Uint64
 }
 
 func (s *stubApps) Save(_ context.Context, _ *model.Application) error { return nil }
@@ -33,8 +32,8 @@ func (s *stubApps) List(_ context.Context, _, _ int) ([]model.Application, int64
 func (s *stubApps) ListEnabled(_ context.Context) ([]model.Application, error) {
 	return s.list, nil
 }
-func (s *stubApps) UpdateLastCheckAt(_ context.Context, id uint, _ time.Time) error {
-	s.updates = append(s.updates, id)
+func (s *stubApps) UpdateLastCheckAt(_ context.Context, _ uint, _ time.Time) error {
+	s.updates.Add(1)
 	return nil
 }
 
@@ -66,7 +65,7 @@ func TestPoller_PollsOnce(t *testing.T) {
 	go p.Run(ctx)
 	time.Sleep(40 * time.Millisecond)
 	cancel()
-	if len(apps.updates) == 0 {
+	if apps.updates.Load() == 0 {
 		t.Fatal("expected at least one last_check_at write")
 	}
 }

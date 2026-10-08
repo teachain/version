@@ -7,6 +7,7 @@ import (
 
 	"github.com/teachain/version/internal/apperror"
 	"github.com/teachain/version/internal/model"
+	"github.com/teachain/version/internal/repository"
 )
 
 type fakeAppRepo struct {
@@ -34,7 +35,7 @@ func (f *fakeAppRepo) Get(_ context.Context, id uint) (*model.Application, error
 	if a, ok := f.items[id]; ok {
 		return a, nil
 	}
-	return nil, apperror.NotFoundf("app %d", id)
+	return nil, repository.ErrNotFound
 }
 func (f *fakeAppRepo) GetByName(_ context.Context, name string) (*model.Application, error) {
 	id, ok := f.byName[name]
@@ -100,5 +101,17 @@ func TestApplicationService_Create_Conflict(t *testing.T) {
 	}
 	if got := err.(*apperror.Error); got.Kind != apperror.Conflict {
 		t.Fatalf("kind=%v", got.Kind)
+	}
+}
+
+func TestApplicationService_Update_NotFound(t *testing.T) {
+	svc := NewApplicationService(newFakeAppRepo())
+	newName := "new"
+	_, err := svc.Update(context.Background(), 999, &newName, nil, nil)
+	if err == nil {
+		t.Fatal("expected not-found")
+	}
+	if got := err.(*apperror.Error); got.Kind != apperror.NotFound {
+		t.Fatalf("kind=%v want NotFound", got.Kind)
 	}
 }

@@ -52,6 +52,9 @@ func (s *applicationService) Create(ctx context.Context, name, repoURL string) (
 func (s *applicationService) Update(ctx context.Context, id uint, name, repoURL *string, enabled *bool) (*model.Application, error) {
 	a, err := s.repo.Get(ctx, id)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, apperror.NotFoundf("application %d", id)
+		}
 		return nil, err
 	}
 	if name != nil {

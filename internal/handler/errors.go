@@ -9,23 +9,23 @@ import (
 
 func writeError(c interface {
 	Status(int)
-	JSON(any)
+	JSON(int, any)
 }, err error) {
 	var ae *apperror.Error
 	if errors.As(err, &ae) {
+		var status int
 		switch ae.Kind {
 		case apperror.NotFound:
-			c.Status(http.StatusNotFound)
+			status = http.StatusNotFound
 		case apperror.Conflict:
-			c.Status(http.StatusConflict)
+			status = http.StatusConflict
 		case apperror.BadRequest:
-			c.Status(http.StatusBadRequest)
+			status = http.StatusBadRequest
 		default:
-			c.Status(http.StatusInternalServerError)
+			status = http.StatusInternalServerError
 		}
-		c.JSON(map[string]any{"error": ae.Error()})
+		c.JSON(status, map[string]any{"error": ae.Error()})
 		return
 	}
-	c.Status(http.StatusInternalServerError)
-	c.JSON(map[string]any{"error": err.Error()})
+	c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 }

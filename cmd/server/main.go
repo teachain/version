@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,7 +24,19 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
+	var configPath string
+	flag.StringVar(&configPath, "config", "", "path to YAML config file")
+	flag.StringVar(&configPath, "c", "", "path to YAML config file (shorthand)")
+	flag.Parse()
+
+	if configPath == "" {
+		configPath = os.Getenv("CONFIG_FILE")
+	}
+	if configPath == "" {
+		configPath = "./config.yaml"
+	}
+
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}

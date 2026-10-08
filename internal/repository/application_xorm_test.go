@@ -22,6 +22,9 @@ func setupEngine(t *testing.T) (*xorm.Engine, func()) {
 		if err := eng.Sync(new(model.Application)); err != nil {
 			t.Fatalf("sync: %v", err)
 		}
+		if err := eng.Sync(new(model.Version)); err != nil {
+			t.Fatalf("sync: %v", err)
+		}
 		return eng, func() { _ = eng.Close() }
 	}
 	ctx := context.Background()
@@ -38,6 +41,9 @@ func setupEngine(t *testing.T) (*xorm.Engine, func()) {
 		t.Fatalf("failation: %v", err)
 	}
 	if err := eng.Sync(new(model.Application)); err != nil {
+		t.Fatalf("sync: %v", err)
+	}
+	if err := eng.Sync(new(model.Version)); err != nil {
 		t.Fatalf("sync: %v", err)
 	}
 	return eng, func() {

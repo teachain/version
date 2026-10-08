@@ -1,0 +1,21 @@
+# teachain-version configuration
+# Path resolution precedence: --config flag > CONFIG_FILE env var > ./config.yaml
+
+# MySQL DSN (required). Example for local dev:
+# db_dsn: "root:root@tcp(127.0.0.1:3306)/teachain?charset=utf8mb4"
+db_dsn: "root:root@tcp(127.0.0.1:3306)/teachain?charset=utf8mb4"
+
+# GitHub personal access token (optional). Empty = unauthenticated (60 req/hr).
+# github_token: "ghp_xxx"
+
+# HTTP server port (default 8080)
+http_port: 8080
+
+# GitHub release polling interval (Go duration, default 10m)
+poll_interval: 10m
+
+# Max concurrent application polls (default 10)
+poll_concurrency: 10
+
+# zap log level: debug, info, warn, error (default info)
+log_level: info

@@ -22,16 +22,24 @@ func TestError_Unwrap(t *testing.T) {
 }
 
 func TestConstructors(t *testing.T) {
-	if NotFoundf("x %d", 1).Kind != NotFound {
-		t.Fail()
+	if got, want := NotFoundf("x %d", 1).Kind, NotFound; got != want {
+		t.Errorf("got kind=%v, want=%v", got, want)
 	}
-	if Conflictf("x").Kind != Conflict {
-		t.Fail()
+	if got, want := Conflictf("x").Kind, Conflict; got != want {
+		t.Errorf("got kind=%v, want=%v", got, want)
 	}
-	if BadRequestf("x").Kind != BadRequest {
-		t.Fail()
+	if got, want := BadRequestf("x").Kind, BadRequest; got != want {
+		t.Errorf("got kind=%v, want=%v", got, want)
 	}
-	if InternalWrap(fmt.Errorf("e"), "x").Kind != Internal {
-		t.Fail()
+	if got, want := InternalWrap(fmt.Errorf("e"), "x").Kind, Internal; got != want {
+		t.Errorf("got kind=%v, want=%v", got, want)
+	}
+}
+
+func TestError_ErrorMessageWithCause(t *testing.T) {
+	cause := errors.New("boom")
+	e := &Error{Kind: Internal, Msg: "wrap", Cause: cause}
+	if got, want := e.Error(), "internal: wrap: boom"; got != want {
+		t.Fatalf("Error() = %q, want %q", got, want)
 	}
 }

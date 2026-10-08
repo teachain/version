@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -109,5 +108,3 @@ func (h *ApplicationHandler) del(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
-
-var _ = errors.New

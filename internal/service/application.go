@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	gh "github.com/teachain/version/pkg/github"
 
@@ -105,5 +104,3 @@ func (s *applicationService) List(ctx context.Context, page, size int) ([]model.
 	}
 	return s.repo.List(ctx, page, size)
 }
-
-var _ = time.Now

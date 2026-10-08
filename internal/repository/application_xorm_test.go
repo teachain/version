@@ -38,7 +38,7 @@ func setupEngine(t *testing.T) (*xorm.Engine, func()) {
 	}
 	eng, err := NewEngine(dsn)
 	if err != nil {
-		t.Fatalf("failation: %v", err)
+		t.Fatalf("engine: %v", err)
 	}
 	if err := eng.Sync(new(model.Application)); err != nil {
 		t.Fatalf("sync: %v", err)
